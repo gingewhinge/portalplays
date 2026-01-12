@@ -31,6 +31,26 @@ body{
   padding: 16px;
 }
 
+/* ---------- Masthead (all screens) ---------- */
+.masthead{
+  width: 100%;
+  border: 1px solid var(--stroke);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(15,43,85,.92), rgba(15,43,85,.70));
+  box-shadow: 0 10px 22px rgba(0,0,0,.22);
+  margin-bottom: 12px;
+}
+.masthead-inner{
+  padding: 12px 14px;
+  text-align: center;
+  font-weight: 1000;
+  letter-spacing: .6px;
+  color: var(--accent);
+  text-transform: uppercase;
+  font-size: 14px;
+}
+
+/* ---------- Card / typography ---------- */
 .card{
   background: linear-gradient(180deg, var(--card), var(--card2));
   border: 1px solid var(--stroke);
@@ -53,7 +73,7 @@ body{
 .big{ font-size: 20px; font-weight: 900; }
 .line{ margin: 6px 0; }
 
-/* Buttons */
+/* ---------- Buttons ---------- */
 .btn{
   appearance:none;
   border: 1px solid var(--stroke);
@@ -70,15 +90,10 @@ body{
   opacity:.45;
   cursor:not-allowed;
 }
-
 .btn-wide{ width:100%; }
 
-.btn-soft{
-  background: rgba(255,255,255,.07);
-}
-.btn-soft:hover{
-  background: rgba(255,255,255,.10);
-}
+.btn-soft{ background: rgba(255,255,255,.07); }
+.btn-soft:hover{ background: rgba(255,255,255,.10); }
 
 .btn-primary{
   border-color: rgba(45,212,191,.55);
@@ -88,19 +103,15 @@ body{
   background: linear-gradient(180deg, rgba(45,212,191,.28), rgba(56,189,248,.18));
 }
 
-.btn-ghost{
-  background: rgba(255,255,255,.08);
-}
-.btn-ghost:hover{
-  background: rgba(255,255,255,.12);
-}
+.btn-ghost{ background: rgba(255,255,255,.08); }
+.btn-ghost:hover{ background: rgba(255,255,255,.12); }
 
 .btn-added{
   border-color: rgba(45,212,191,.55);
   background: rgba(45,212,191,.18);
 }
 
-/* Select (Screen 1 alignment fix) */
+/* ---------- Select ---------- */
 .select-wrap{ margin: 8px 0 14px; }
 .select{
   width:100%;
@@ -112,35 +123,25 @@ body{
   font-weight: 800;
   outline: none;
 
-  /* Center selected text */
   text-align: center;
   text-align-last: center;
 }
-.select option{
-  /* Center options (supported in most browsers) */
-  text-align: center;
-}
+.select option{ text-align: center; }
 
 /* Screen 1 mandate buttons */
 .mandate-grid{
   display:grid;
   gap: 10px;
 }
-.mandate-btn{
-  white-space: nowrap;
-}
+.mandate-btn{ white-space: nowrap; }
 
-/* ---------- SCREEN 2 (flow + tabs) ---------- */
-/* Screen 2 is intentionally NOT wrapped in .card, to avoid “modal” feel */
-.screen2{
-  display:block;
-}
+/* ---------- SCREEN 2 (scroll behavior fixed: header scrolls away naturally) ---------- */
+.screen2{ display:block; }
 
-/* Sticky header stays visible but the page scrolls naturally */
+/* IMPORTANT: no sticky here */
 .screen2-top{
-  position: sticky;
-  top: 0;
-  z-index: 3;
+  position: relative;
+  z-index: 1;
   background: linear-gradient(180deg, rgba(15,43,85,.96), rgba(15,43,85,.90));
   border: 1px solid var(--stroke);
   border-radius: 14px;
@@ -168,32 +169,27 @@ body{
   gap: 8px;
   font-size: 14px;
 }
-
 .meta-row{
   display:flex;
   flex-direction:column;
   gap: 6px;
 }
-
-/* a tighter 2-col row to keep header from eating the screen */
 .meta-row-2col{
   display:grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px 12px;
 }
-
 .note{
   color: var(--muted);
   font-size: 13px;
   line-height: 1.35;
 }
-
 .actions-row{
   margin-top: 10px;
   margin-bottom: 10px;
 }
 
-/* Position tabs: single intentional wrapping row */
+/* Position tabs */
 .pos-tabs{ display:block; }
 .pos-row{
   display:flex;
@@ -216,8 +212,6 @@ body{
   flex-direction:column;
   background: transparent;
 }
-
-/* Dense, readable rows like PFF */
 .player-row{
   display:flex;
   align-items:center;
@@ -250,7 +244,6 @@ body{
   text-overflow: ellipsis;
   max-width: 54vw;
 }
-
 .p-right{
   display:flex;
   align-items:center;
@@ -262,7 +255,7 @@ body{
   white-space: nowrap;
 }
 
-/* Screen 3 spacing */
+/* ---------- Screen 3 spacing + share ---------- */
 .stack{
   display:flex;
   flex-direction:column;
@@ -294,13 +287,25 @@ body{
   font-weight: 900;
 }
 
+/* Share row */
+.share-row{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.share-status{
+  min-height: 18px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
 /* Mobile tweaks */
 @media (max-width: 420px){
   .card{ padding: 14px; }
   .h2{ font-size: 19px; }
   .p-sub{ max-width: 48vw; }
 
-  /* keep header compact on small screens */
   .meta-row-2col{
     grid-template-columns: 1fr;
   }
