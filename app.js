@@ -2,6 +2,19 @@
   const root = document.getElementById("portal-mock-root");
   if (!root) return;
 
+  /* ---------- MASTHEAD (JS injected, persists across screens) ---------- */
+  (function injectMasthead() {
+    const parent = root.parentElement || document.body;
+    if (document.getElementById("pp-masthead")) return;
+
+    const mast = document.createElement("header");
+    mast.id = "pp-masthead";
+    mast.className = "masthead";
+    mast.innerHTML = `<div class="masthead-inner">Portal Plays</div>`;
+
+    parent.insertBefore(mast, root);
+  })();
+
   const SHEET_ID = "1_S0UnO30HuTNqvdNm9kIIZTYdpCFI-3qpkrr_aDgc4I";
   const COLLEGES_URL = `https://opensheet.elk.sh/${SHEET_ID}/colleges`;
   const PLAYERS_URL = `https://opensheet.elk.sh/${SHEET_ID}/players`;
@@ -80,6 +93,71 @@
     if (p >= 1.5) return 110;
     return 150;
   };
+
+  /* ---------- SHARING HELPERS (Screen 3) ---------- */
+
+  function buildShareText({ outcomeLabel, finalWins, winsAdded, execution, boosters, you }) {
+    const school = state.school?.name || "—";
+    const mandate = state.mandate || "—";
+    const spend = state.portalFund - state.remaining;
+
+    const added =
+      state.selected.length
+        ? state.selected.map(p => `- ${p.name} (${p.position})`).join("\n")
+        : "- None";
+
+    const recordLine = `${state.school.wins}-${state.school.losses} → ${finalWins}-${Math.max(0, state.school.losses - winsAdded)} (+${winsAdded} wins)`;
+    const outcomeLine = outcomeLabel ? `Outcome: ${outcomeLabel}` : `Outcome: —`;
+
+    const url = (typeof location !== "undefined" && location.href) ? location.href : "portalplays.com";
+
+    return [
+      `Portal Plays — Results`,
+      ``,
+      `School: ${school}`,
+      `Plan: ${mandate}`,
+      `Portal Fund: ${money(state.portalFund)}`,
+      `Spend: ${money(spend)} (Remaining: ${money(state.remaining)})`,
+      ``,
+      `Transfers Added:`,
+      added,
+      ``,
+      `Record: ${recordLine}`,
+      outcomeLine,
+      ``,
+      `Execution: ${execution}`,
+      `Boosters: ${boosters}`,
+      `Your Outlook: ${you}`,
+      ``,
+      `Try it: ${url}`
+    ].join("\n");
+  }
+
+  async function copyToClipboard(text) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (_) {}
+
+    // Fallback
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      ta.style.top = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    } catch (_) {
+      return false;
+    }
+  }
 
   /* ---------- DATA LOAD ---------- */
 
@@ -383,6 +461,9 @@
       }
     }
 
+    const shareText = buildShareText({ outcomeLabel, finalWins, winsAdded, execution, boosters, you });
+    const canNativeShare = typeof navigator !== "undefined" && !!navigator.share;
+
     const el = $(`
       <div class="card">
         <div class="h2 center">${state.school.name}</div>
@@ -437,10 +518,43 @@
             <div class="panel-body">${you}</div>
           </div>
 
+          <div class="share-row">
+            <button class="btn btn-ghost btn-wide" id="copyResults">Copy results</button>
+            ${canNativeShare ? `<button class="btn btn-primary btn-wide" id="nativeShare">Share</button>` : ""}
+          </div>
+
+          <div class="share-status" id="shareStatus" aria-live="polite"></div>
+
           <button class="btn btn-primary btn-wide" onclick="location.reload()">Run Again</button>
         </div>
       </div>
     `);
+
+    // Copy
+    el.querySelector("#copyResults").onclick = async () => {
+      const status = el.querySelector("#shareStatus");
+      status.textContent = "";
+      const ok = await copyToClipboard(shareText);
+      status.textContent = ok ? "Copied." : "Couldn’t copy on this browser.";
+    };
+
+    // Native share (mobile)
+    const shareBtn = el.querySelector("#nativeShare");
+    if (shareBtn) {
+      shareBtn.onclick = async () => {
+        const status = el.querySelector("#shareStatus");
+        status.textContent = "";
+        try {
+          await navigator.share({
+            title: "Portal Plays — Results",
+            text: shareText
+          });
+          status.textContent = "Shared.";
+        } catch (_) {
+          // user cancel = fine, do nothing
+        }
+      };
+    }
 
     root.appendChild(el);
   }
