@@ -20,7 +20,7 @@
     activePos: "ALL"
   };
 
-  /* ---------------- UTIL ---------------- */
+  /* ---------- UTIL ---------- */
 
   const normalizePosition = p => {
     if (p === "DI") return "DL";
@@ -28,7 +28,10 @@
     return p;
   };
 
-  const POSITIONS = ["QB","RB","WR","TE","OT","IOL","C","DL","EDGE","LB","CB","S"];
+  const POSITIONS = [
+    "QB","RB","WR","TE","OT","IOL","C",
+    "DL","EDGE","LB","CB","S"
+  ];
 
   const $ = html => {
     const d = document.createElement("div");
@@ -42,7 +45,7 @@
   const money = n =>
     `$${(n / 1_000_000).toFixed(1)}M`;
 
-  /* ---------- FIXED PLAYER GRADING ---------- */
+  /* ---------- PLAYER GRADING ---------- */
   const ratingTier = r => {
     if (!r) return "C";
     if (r >= 97) return "A+";
@@ -57,16 +60,16 @@
   const isPremium = r => r >= 87;
 
   /* ---------- PRESTIGE TAX TABLE ---------- */
-  const PRESTIGE_TAX = {
-    5.0: 0.00,
-    4.5: 0.05,
-    4.0: 0.10,
-    3.5: 0.20,
-    3.0: 0.35,
-    2.5: 0.55,
-    2.0: 0.80,
-    1.5: 1.10,
-    1.0: 1.50
+  const prestigeTax = prestige => {
+    if (prestige >= 5.0) return 0;
+    if (prestige >= 4.5) return 5;
+    if (prestige >= 4.0) return 10;
+    if (prestige >= 3.5) return 20;
+    if (prestige >= 3.0) return 35;
+    if (prestige >= 2.5) return 55;
+    if (prestige >= 2.0) return 80;
+    if (prestige >= 1.5) return 110;
+    return 150;
   };
 
   /* ---------- DATA LOAD ---------- */
@@ -107,10 +110,9 @@
 
   function renderScreen1() {
     const el = $(`
-      <div style="padding:16px;font-family:system-ui;text-align:center">
-        <h3>Pick your school</h3>
-
-        <select id="school" style="width:100%;margin-bottom:16px;text-align:center;">
+      <div class="card">
+        <h2>Pick your school</h2>
+        <select id="school">
           ${state.colleges.map(c => `<option>${c.name}</option>`).join("")}
         </select>
 
@@ -123,7 +125,9 @@
           "Avoid a setback",
           "This is a rebuild"
         ].map(m => `
-          <button style="width:100%;margin:6px 0" data-m="${m}">${m}</button>
+          <button class="btn-soft mandate-btn" data-m="${m}">
+            ${m}
+          </button>
         `).join("")}
       </div>
     `);
@@ -142,6 +146,7 @@
 
         state.portalFund = Math.round(state.school.nil * (basePct + mod));
         state.remaining = state.portalFund;
+
         state.screen = 2;
         render();
       };
@@ -153,50 +158,54 @@
   /* ---------- SCREEN 2 ---------- */
 
   function renderScreen2() {
-    const taxRate = PRESTIGE_TAX[state.school.prestige] || 0;
+    const prestigeTaxPct = prestigeTax(state.school.prestige);
 
     const players = state.players
       .filter(p => state.activePos === "ALL" || p.position === state.activePos)
       .map(p => {
-        const adjusted = isPremium(p.rating)
-          ? Math.round(p.basePrice * (1 + taxRate))
-          : p.basePrice;
-        return { ...p, price: adjusted };
+        const taxed =
+          isPremium(p.rating)
+            ? Math.round(p.basePrice * (1 + prestigeTaxPct / 100))
+            : p.basePrice;
+        return { ...p, price: taxed };
       })
       .sort((a,b) => b.price - a.price);
 
     const el = $(`
-      <div style="padding:16px;font-family:system-ui">
-        <div style="position:sticky;top:0;background:#fff;padding-bottom:8px">
-          <strong>${state.school.name}</strong><br>
-          The AD has raised <strong>${money(state.portalFund)}</strong> from boosters
-          to address your top transfer needs.<br>
-          Needs: ${state.school.needs.join(", ")}<br>
-          <em>Add up to 5 transfer players.</em><br>
-          <small>
-            Because your school’s prestige is ${state.school.prestige},
-            agents are signaling that top transfers will require above-market offers.
-            Expect prices for B+ players and above to run approximately ${Math.round(taxRate*100)}% higher.
-          </small><br><br>
+      <div class="card">
+        <strong>${state.school.name}</strong><br>
+        The AD has raised <strong>${money(state.portalFund)}</strong> from boosters.<br>
+        Needs: ${state.school.needs.join(", ")}<br>
+        <em>Add up to 5 transfer players.</em><br><br>
 
-          <button ${state.selected.length ? "" : "disabled"} id="continue">Continue</button>
+        <small>
+          Because your school’s prestige is ${state.school.prestige},
+          agents are signaling that top transfers will require above-market offers.
+          Expect prices for B+ players and above to run approximately ${prestigeTaxPct}% higher.
+        </small>
 
-          <div style="margin-top:8px">
-            <button data-pos="ALL">ALL</button>
-            ${POSITIONS.map(p => `<button data-pos="${p}">${p}</button>`).join("")}
-          </div>
+        <button class="action-btn" ${state.selected.length ? "" : "disabled"} id="continue">
+          Continue
+        </button>
+
+        <div class="filter-row">
+          <button class="btn-soft" data-pos="ALL">ALL</button>
+          ${POSITIONS.map(p => `<button class="btn-soft" data-pos="${p}">${p}</button>`).join("")}
         </div>
 
         ${players.map(p => {
           const added = state.selected.some(s => s.id === p.id);
-          const disabled = added || state.selected.length >= MAX_PLAYERS || state.remaining < p.price;
+          const disabled =
+            added ||
+            state.selected.length >= MAX_PLAYERS ||
+            state.remaining < p.price;
 
           return `
-            <div style="border-bottom:1px solid #ddd;padding:6px 0">
+            <div class="player">
               <strong>${p.name}</strong> (${p.position})<br>
               ${p.from} | Grade: ${ratingTier(p.rating)}<br>
               ${money(p.price)}<br>
-              <button ${disabled ? "disabled" : ""} data-id="${p.id}">
+              <button class="add-btn" ${disabled ? "disabled" : ""} data-id="${p.id}">
                 ${added ? "Added" : "Add"}
               </button>
             </div>
@@ -215,7 +224,7 @@
     el.querySelectorAll("button[data-id]").forEach(b => {
       b.onclick = () => {
         const p = players.find(x => x.id === b.dataset.id);
-        if (state.remaining < p.price) return;
+        if (!p || state.remaining < p.price) return;
         state.selected.push(p);
         state.remaining -= p.price;
         render();
@@ -244,35 +253,36 @@
     else if (finalWins >= 10) tier = "PLAYOFF";
     else if (finalWins >= 9 && state.school.prestige < 4) tier = "CONFERENCE";
 
-    let execution, boosters, yourOutlook;
+    let execution, boosters, you;
 
     if (tier === "NATIONAL") {
       execution = "The roster came together perfectly and delivered a title run.";
-      boosters = "Boosters are ecstatic and fully aligned behind the program.";
-      yourOutlook = "Other ADs are scrambling for your number. You are now viewed as elite.";
+      boosters = "Boosters are ecstatic and fully aligned behind your vision.";
+      you = "Other ADs are scrambling for your number. You’re a rising star GM.";
+    } else if (tier === "PLAYOFF") {
+      execution = "The program took a major step forward on the national stage.";
+      boosters = "Boosters are energized and ready to invest again.";
+      you = "You’re firmly on the short list for top athletic departments.";
+    } else if (tier === "CONFERENCE") {
+      execution = "A breakthrough season that changed the trajectory of the program.";
+      boosters = "Confidence in leadership is growing fast.";
+      you = "You’re building a reputation as a program builder.";
     } else {
-      const highPrestige = state.school.prestige >= 4;
+      execution = winsAdded >= 1
+        ? "Progress was visible, even if results fell short of big goals."
+        : "Results were uneven despite the investment.";
 
-      execution =
-        winsAdded >= 2
-          ? "The additions largely worked as intended."
-          : "Results were uneven despite the investment.";
+      boosters = winsAdded >= 1
+        ? "Boosters remain cautiously optimistic."
+        : "Booster confidence has softened.";
 
-      boosters =
-        highPrestige
-          ? "Boosters remain supportive but expect more next season."
-          : "Boosters are cautiously encouraged by the direction.";
-
-      yourOutlook =
-        winsAdded >= 2
-          ? "Your reputation is rising. You are seen as a smart portal operator."
-          : winsAdded === 1
-          ? "You are viewed as steady but unproven. Next season matters."
-          : "You have decided to spend more time with your family.";
+      you = winsAdded >= 1
+        ? "You retain trust but know next year is pivotal."
+        : "You decide to spend more time with your family and step away from the grind.";
     }
 
     root.appendChild($(`
-      <div style="padding:16px;font-family:system-ui">
+      <div class="card">
         <h3>Players Added</h3>
         ${state.selected.map(p => `${p.name} (${p.position})`).join("<br>")}
 
@@ -296,10 +306,9 @@
         ${boosters}
 
         <h3>Your Outlook</h3>
-        ${yourOutlook}
+        ${you}
 
-        <br><br>
-        <button onclick="location.reload()">Run Again</button>
+        <button class="action-btn" onclick="location.reload()">Run Again</button>
       </div>
     `));
   }
