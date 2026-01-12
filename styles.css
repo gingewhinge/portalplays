@@ -24,7 +24,7 @@ body{
   color:var(--text);
 }
 
-/* Container helpers (works with your simulator page wrapper) */
+/* Container helpers */
 .simulator-page .app-container{
   max-width: 720px;
   margin: 0 auto;
@@ -100,7 +100,7 @@ body{
   background: rgba(45,212,191,.18);
 }
 
-/* Select */
+/* Select (Screen 1 alignment fix) */
 .select-wrap{ margin: 8px 0 14px; }
 .select{
   width:100%;
@@ -111,6 +111,14 @@ body{
   color: #fff;
   font-weight: 800;
   outline: none;
+
+  /* Center selected text */
+  text-align: center;
+  text-align-last: center;
+}
+.select option{
+  /* Center options (supported in most browsers) */
+  text-align: center;
 }
 
 /* Screen 1 mandate buttons */
@@ -122,7 +130,13 @@ body{
   white-space: nowrap;
 }
 
-/* Screen 2 header block */
+/* ---------- SCREEN 2 (flow + tabs) ---------- */
+/* Screen 2 is intentionally NOT wrapped in .card, to avoid “modal” feel */
+.screen2{
+  display:block;
+}
+
+/* Sticky header stays visible but the page scrolls naturally */
 .screen2-top{
   position: sticky;
   top: 0;
@@ -134,6 +148,7 @@ body{
   margin-bottom: 12px;
   box-shadow: 0 10px 22px rgba(0,0,0,.25);
 }
+
 .school-row{
   display:flex;
   align-items:center;
@@ -146,29 +161,40 @@ body{
   letter-spacing: .3px;
   text-align:center;
 }
+
 .meta{
   display:flex;
   flex-direction:column;
   gap: 8px;
   font-size: 14px;
 }
+
 .meta-row{
   display:flex;
   flex-direction:column;
   gap: 6px;
 }
+
+/* a tighter 2-col row to keep header from eating the screen */
+.meta-row-2col{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+}
+
 .note{
   color: var(--muted);
   font-size: 13px;
   line-height: 1.35;
 }
+
 .actions-row{
   margin-top: 10px;
   margin-bottom: 10px;
 }
 
-/* Position tabs: two wrapped rows, dense */
-.pos-tabs{ display:flex; flex-direction:column; gap: 8px; }
+/* Position tabs: single intentional wrapping row */
+.pos-tabs{ display:block; }
 .pos-row{
   display:flex;
   flex-wrap: wrap;
@@ -184,11 +210,14 @@ body{
   background: rgba(45,212,191,.18);
 }
 
-/* Player list: dense, smooth */
+/* Player list */
 .players-list{
   display:flex;
   flex-direction:column;
+  background: transparent;
 }
+
+/* Dense, readable rows like PFF */
 .player-row{
   display:flex;
   align-items:center;
@@ -199,9 +228,7 @@ body{
 }
 .player-row:first-child{ border-top: 0; padding-top: 2px; }
 
-.p-left{
-  min-width: 0;
-}
+.p-left{ min-width: 0; }
 .p-name{
   font-weight: 900;
   font-size: 14px;
@@ -223,6 +250,7 @@ body{
   text-overflow: ellipsis;
   max-width: 54vw;
 }
+
 .p-right{
   display:flex;
   align-items:center;
@@ -271,4 +299,9 @@ body{
   .card{ padding: 14px; }
   .h2{ font-size: 19px; }
   .p-sub{ max-width: 48vw; }
+
+  /* keep header compact on small screens */
+  .meta-row-2col{
+    grid-template-columns: 1fr;
+  }
 }
