@@ -30,8 +30,8 @@
     return s;
   };
 
-  const OFFENSE_POS = ["C", "IOL", "K", "LS", "OT", "QB", "RB", "TE", "WR"];
-  const DEFENSE_POS = ["CB", "DL", "EDGE", "LB", "P", "S"];
+  // HARD-SET ORDER (no randomness, no K/P/LS surprises)
+  const POS_ORDER = ["ALL", "QB", "RB", "WR", "TE", "OT", "IOL", "C", "DL", "EDGE", "LB", "CB", "S"];
 
   const $ = (html) => {
     const d = document.createElement("div");
@@ -47,7 +47,7 @@
   const money = (n) => `$${(n / 1_000_000).toFixed(1)}M`;
 
   /* ---------- PLAYER GRADING ---------- */
-  // N/A should behave like C, per your note.
+  // N/A behaves like C
   const ratingTier = (r) => {
     if (r === null || r === undefined || r === "") return "C";
     const n = Number(r);
@@ -62,12 +62,11 @@
   };
 
   const isPremium = (r) => {
-    // Premium = B+ and above
     const n = Number(r);
-    return Number.isFinite(n) && n >= 87;
+    return Number.isFinite(n) && n >= 87; // B+ and above
   };
 
-  /* ---------- PRESTIGE TAX TABLE (your exact table) ---------- */
+  /* ---------- PRESTIGE TAX TABLE ---------- */
   // Returns percent, e.g. 35 = +35%
   const prestigeTax = (prestige) => {
     const p = Number(prestige);
@@ -84,7 +83,10 @@
 
   /* ---------- DATA LOAD ---------- */
 
-  Promise.all([fetch(COLLEGES_URL).then((r) => r.json()), fetch(PLAYERS_URL).then((r) => r.json())])
+  Promise.all([
+    fetch(COLLEGES_URL).then((r) => r.json()),
+    fetch(PLAYERS_URL).then((r) => r.json())
+  ])
     .then(([cRaw, pRaw]) => {
       state.colleges = cRaw.map((r) => ({
         name: r.name,
@@ -111,7 +113,12 @@
     })
     .catch((err) => {
       console.error(err);
-      root.innerHTML = `<div class="card"><div class="h2">Portal mock failed to load.</div><div class="muted">Check your sheet publish + opensheet URL.</div></div>`;
+      root.innerHTML = `
+        <div class="card">
+          <div class="h2 center">Portal mock failed to load.</div>
+          <div class="muted">Check your sheet publish + opensheet URL.</div>
+        </div>
+      `;
     });
 
   function render() {
@@ -155,7 +162,6 @@
     el.querySelectorAll(".mandate-btn").forEach((b) => {
       b.onclick = () => {
         state.mandate = b.dataset.m;
-
         state.school = state.colleges.find((c) => c.name === el.querySelector("#school").value);
 
         // Portal fund framing
@@ -166,9 +172,9 @@
 
         state.portalFund = Math.round(state.school.nil * (basePct + mod));
         state.remaining = state.portalFund;
+
         state.selected = [];
         state.activePos = "ALL";
-
         state.screen = 2;
         render();
       };
@@ -185,28 +191,38 @@
     const players = state.players
       .filter((p) => state.activePos === "ALL" || p.position === state.activePos)
       .map((p) => {
-        const price =
-          isPremium(p.rating) ? Math.round(p.basePrice * (1 + taxPct / 100)) : p.basePrice;
+        const price = isPremium(p.rating)
+          ? Math.round(p.basePrice * (1 + taxPct / 100))
+          : p.basePrice;
         return { ...p, price };
       })
       .sort((a, b) => b.price - a.price);
 
-    const taxSentence = `Because your school’s prestige is ${state.school.prestige.toFixed(1)}, agents are signaling that top transfers will require above-market offers. Expect prices for B+ players and above to run approximately ${taxPct}% higher.`;
+    const taxSentence = `Because your school’s prestige is ${state.school.prestige.toFixed(
+      1
+    )}, agents are signaling that top transfers will require above-market offers. Expect prices for B+ players and above to run approximately ${taxPct}% higher.`;
 
     const el = $(`
-      <div class="card">
+      <div class="screen2">
         <div class="screen2-top">
           <div class="school-row">
             <div class="school-name">${state.school.name}</div>
           </div>
 
           <div class="meta">
-            <div>The AD has raised <span class="em">${money(state.portalFund)}</span> from boosters to address your top transfer needs.</div>
-            <div class="meta-row">
+            <div>
+              The AD has raised <span class="em">${money(state.portalFund)}</span> from boosters to address your top transfer needs.
+            </div>
+
+            <div class="meta-row meta-row-2col">
               <div><span class="label">Remaining NIL</span> <span class="em">${money(state.remaining)}</span></div>
               <div><span class="label">Needs</span> ${state.school.needs.join(", ") || "—"}</div>
+            </div>
+
+            <div class="meta-row">
               <div><span class="label">Limit</span> Add up to 5 transfer players.</div>
             </div>
+
             <div class="note">${taxSentence}</div>
           </div>
 
@@ -218,15 +234,10 @@
 
           <div class="pos-tabs">
             <div class="pos-row">
-              <button class="btn btn-soft pos-btn ${state.activePos === "ALL" ? "active" : ""}" data-pos="ALL">ALL</button>
-              ${OFFENSE_POS.map(
-                (p) => `<button class="btn btn-soft pos-btn ${state.activePos === p ? "active" : ""}" data-pos="${p}">${p}</button>`
-              ).join("")}
-            </div>
-            <div class="pos-row">
-              ${DEFENSE_POS.map(
-                (p) => `<button class="btn btn-soft pos-btn ${state.activePos === p ? "active" : ""}" data-pos="${p}">${p}</button>`
-              ).join("")}
+              ${POS_ORDER.map((p) => {
+                const active = state.activePos === p ? "active" : "";
+                return `<button class="btn btn-soft pos-btn ${active}" data-pos="${p}">${p}</button>`;
+              }).join("")}
             </div>
           </div>
         </div>
@@ -237,9 +248,6 @@
               const added = state.selected.some((s) => s.id === p.id);
               const atLimit = state.selected.length >= MAX_PLAYERS;
               const affordable = state.remaining >= p.price;
-
-              // We do not allow negatives. If you want a “go negative with consequences” mode later,
-              // we can add it deliberately. For now: hard stop.
               const disabled = added || atLimit || !affordable;
 
               return `
@@ -308,13 +316,11 @@
   function renderScreen3() {
     const spend = state.portalFund - state.remaining;
 
-    // Win math (simple, stable)
     const baseWins = Math.min(3, Math.floor(spend / 3_000_000));
     const luck = Math.random() < 0.3 ? -1 : Math.random() > 0.8 ? 1 : 0;
     const winsAdded = Math.max(0, baseWins + luck);
     const finalWins = state.school.wins + winsAdded;
 
-    // Outcome tier
     let tier = "NONE";
     if (finalWins >= 12) tier = "NATIONAL";
     else if (finalWins >= 10) tier = "PLAYOFF";
@@ -329,9 +335,6 @@
         ? "Conference Champion"
         : null;
 
-    // Sentiment rules:
-    // 1) If NATIONAL: never negative anything.
-    // 2) If prestige >= 4.0 and you don't hit PLAYOFF or better: antsy/pressure.
     const highPrestige = state.school.prestige >= 4.0;
 
     let execution = "";
@@ -351,7 +354,6 @@
       boosters = "Confidence is building fast and NIL support is trending up.";
       you = "You’ve earned real credibility as a program builder.";
     } else {
-      // tier NONE
       if (highPrestige) {
         execution =
           winsAdded >= 2
